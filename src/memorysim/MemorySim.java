@@ -6,8 +6,6 @@
 package memorysim;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Random;
@@ -26,6 +24,7 @@ public class MemorySim {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws IOException {
+        //instantiates memorySim to allow for use of the methods below
         MemorySim memorySim = new MemorySim();
     
     }
@@ -36,7 +35,7 @@ public class MemorySim {
         
         
         
-        
+        //creates the list for the UI; when switch case 0 is hit the program ends
         j = 0;
         while (j == 0) {
             System.out.println("0 - Exit");
@@ -82,6 +81,7 @@ public class MemorySim {
         }
     }
     
+    //reads the string from keyboard input
     private String readString() {
         System.out.println("");
         System.out.println("Please enter a reference string:");
@@ -92,6 +92,7 @@ public class MemorySim {
         return reference;
     }
 
+    //generates a random string for use
     private String generateString() {
         int lengthCheck = 0;
         StringBuilder sb = new StringBuilder();
@@ -108,12 +109,14 @@ public class MemorySim {
         return reference;
     }
 
+    //displays the current string in use
     private void displayString() {
         System.out.println("");
         System.out.println("Curent reference string: " + reference);
         System.out.println("");
     }
     
+    //simulates FIFO with the selected String
     private void simulateFIFO() throws IOException {
         int referenceLength = 0;
         char referenceUnit;
@@ -127,12 +130,15 @@ public class MemorySim {
         
         while (referenceLength < reference.length()) {
             referenceUnit = reference.charAt(referenceLength); 
+            //skips the element if it's already in the list
             if (frames.contains(referenceUnit)) {
                 System.out.println("No fault!");
+            //adds the first elements to the list
             } else if (step < frameNumber) {                
                 frames.addFirst(referenceUnit);
                 System.out.println("No fault!");
                 step++;
+            //removes the oldest element and appends the new one
             } else {
                 frames.removeLast();
                 frames.addFirst(referenceUnit);
@@ -147,6 +153,7 @@ public class MemorySim {
         System.out.println("");
     }
     
+    //simulates OPT with the selected String
     private void simulateOPT() {
         int referenceLength = 0;
         char referenceUnit;
@@ -171,16 +178,19 @@ public class MemorySim {
         
         while (referenceLength < reference.length()) {
             referenceUnit = reference.charAt(referenceLength); 
+            //skips the element if it's already in the list
             if (frames.contains(referenceUnit)) {
                 System.out.println("No fault!");
                 checkList.removeFirst();
+            //fills in the first elements up to the no. of frames
             } else if (step < frameNumber) {                
                 frames.addFirst(referenceUnit);
                 System.out.println("No fault!");
                 checkList.removeFirst();
                 step++;
-            } else {
-                while (refExists == false) { 
+            //checks for further use of the element and replaces it 
+            } else if (scanUnit < frameNumber){
+                while (refExists == false && scanUnit < frameNumber) { 
                     char c = (char) frames.get(scanUnit);
                     if (frames.contains(referenceUnit)) {
                 System.out.println("No fault!");
@@ -196,9 +206,14 @@ public class MemorySim {
                         scanUnit = 0;
                         refExists = true;
                     }
-                }
+                } 
                 refExists = false;
-            } 
+            } else {
+                frames.removeLast();
+                frames.addFirst(referenceUnit);
+                pageFault++;
+                step++;  
+                }
             System.out.println(Arrays.toString(frames.toArray()));
             
             referenceLength++;
@@ -207,6 +222,7 @@ public class MemorySim {
         System.out.println("");
     }
           
+    //simulates LRU with the selected String
     private void simulateLRU() {
         int referenceLength = 0;
         char referenceUnit;
@@ -215,10 +231,69 @@ public class MemorySim {
         int scanUnit = 0;
         int step = 0;
         int pageFault = 0;
-        boolean refExists = false;
         LinkedList checkList = new LinkedList();
-        LinkedList indexList = new LinkedList();
         
+        System.out.println("");
+        System.out.println("Select number of physical frames:");
+        int frameNumber = Integer.parseInt(keyString.nextLine());
+        LinkedList frames = new LinkedList();
+        
+        while (checkLength < reference.length()){
+            checkUnit = reference.charAt(checkLength);
+            checkList.add(checkUnit);
+            checkLength++;
+        }
+        
+        
+        while (referenceLength < reference.length()) {
+            referenceUnit = reference.charAt(referenceLength); 
+            //skips the element if it's already in the list
+            if (frames.contains(referenceUnit)) {
+                System.out.println("No fault!");
+            //fills in the first elements up to the no. of frames
+            } else if (step < frameNumber) {                
+                frames.addFirst(referenceUnit);
+                System.out.println("No fault!");
+                step++;
+            //once the frames are filled, compares indices to find oldest element    
+            } else {
+                int i = 0;
+                int compWin = 0;
+                while (i < frameNumber - 1) {
+                    char c1 = (char) frames.get(compWin); 
+                    scanUnit = checkList.indexOf(c1);
+                    char c2 = (char) frames.get(i+1);
+                    int scanUnit2 = checkList.indexOf(c2);
+                    if (scanUnit <= scanUnit2) {
+                        compWin = frames.indexOf(c1);
+                    } else {
+                        compWin = frames.indexOf(c2);
+                    }
+                    i++;
+                }
+
+                frames.remove(compWin);
+                frames.add(compWin, referenceUnit);
+                pageFault++;
+            }
+            System.out.println(Arrays.toString(frames.toArray()));
+            referenceLength++;
+        }
+        System.out.println("Total page faults: " + pageFault);
+        System.out.println("");
+    }
+    
+    //simulates LFU with the selected String
+    private void simulateLFU() {
+        int referenceLength = 0;
+        char referenceUnit;
+        int checkLength = 0;
+        char checkUnit;
+        int scanUnit = 0;
+        int step = 0;
+        int pageFault = 0;
+        LinkedList checkList = new LinkedList();
+
         System.out.println("");
         System.out.println("Select number of physical frames:");
         int frameNumber = Integer.parseInt(keyString.nextLine());
@@ -232,12 +307,15 @@ public class MemorySim {
         
         while (referenceLength < reference.length()) {
             referenceUnit = reference.charAt(referenceLength); 
+            //skips the element if it's already in the list
             if (frames.contains(referenceUnit)) {
                 System.out.println("No fault!");
+            //fills in the first elements up to the no. of frames
             } else if (step < frameNumber) {                
                 frames.addFirst(referenceUnit);
                 System.out.println("No fault!");
                 step++;
+            //once frame is filled, compares number of occurrences
             } else {
                 int i = 0;
                 int compWin = 0;
@@ -247,15 +325,14 @@ public class MemorySim {
                     char c2 = (char) frames.get(i+1);
                     int scanUnit2 = checkList.indexOf(c2);
                     if (scanUnit <= scanUnit2) {
-                        compWin = scanUnit;
+                        compWin = frames.indexOf(c1);
                     } else {
-                        compWin = scanUnit2;
+                        compWin = frames.indexOf(c2);
                     }
                     i++;
                 }
-                char removeThis = (char) checkList.get(compWin);
-                int removeInt = frames.indexOf(removeThis);
-                frames.remove(removeInt);
+
+                frames.remove(compWin);
                 frames.add(referenceUnit);
                 pageFault++;
             }
@@ -264,10 +341,5 @@ public class MemorySim {
         }
         System.out.println("Total page faults: " + pageFault);
         System.out.println("");
-    }
-    
-    private void simulateLFU() {
-        System.out.println("");
-        System.out.println("Select number of physical frames:");
     }
 }
