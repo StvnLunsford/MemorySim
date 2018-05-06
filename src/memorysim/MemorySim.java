@@ -5,6 +5,11 @@
  */
 package memorysim;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -20,12 +25,12 @@ public class MemorySim {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         MemorySim memorySim = new MemorySim();
     
     }
     
-    public MemorySim() {
+    public MemorySim() throws IOException {
         Scanner sc = new Scanner(System.in);
         int i, j;
         
@@ -109,30 +114,156 @@ public class MemorySim {
         System.out.println("");
     }
     
-    private void simulateFIFO() {
+    private void simulateFIFO() throws IOException {
         int referenceLength = 0;
-        int referenceUnit;
-        Scanner referenceScanner = new Scanner(reference);
+        char referenceUnit;
+        int step = 0;
+        int pageFault = 0;
+
+        System.out.println("");
+        System.out.println("Select number of physical frames:");
+        int frameNumber = Integer.parseInt(keyString.nextLine());
+        LinkedList frames = new LinkedList();
+        
+        while (referenceLength < reference.length()) {
+            referenceUnit = reference.charAt(referenceLength); 
+            if (frames.contains(referenceUnit)) {
+                System.out.println("No fault!");
+            } else if (step < frameNumber) {                
+                frames.addFirst(referenceUnit);
+                System.out.println("No fault!");
+                step++;
+            } else {
+                frames.removeLast();
+                frames.addFirst(referenceUnit);
+                pageFault++;
+                step++;
+            } 
+            System.out.println(Arrays.toString(frames.toArray()));
+            
+            referenceLength++;
+        }
+        System.out.println("Total page faults: " + pageFault);
+        System.out.println("");
+    }
+    
+    private void simulateOPT() {
+        int referenceLength = 0;
+        char referenceUnit;
+        int checkLength = 0;
+        char checkUnit;
+        int scanUnit = 0;
+        int step = 0;
+        int pageFault = 0;
+        boolean refExists = false;
+        LinkedList checkList = new LinkedList();
         
         System.out.println("");
         System.out.println("Select number of physical frames:");
         int frameNumber = Integer.parseInt(keyString.nextLine());
+        LinkedList frames = new LinkedList();
         
-        while (referenceLength < reference.length()) {
-            referenceUnit = referenceScanner.nextInt();
-            
+        while (checkLength < reference.length()){
+            checkUnit = reference.charAt(checkLength);
+            checkList.add(checkUnit);
+            checkLength++;
         }
         
-    }
-    
-    private void simulateOPT() {
+        while (referenceLength < reference.length()) {
+            referenceUnit = reference.charAt(referenceLength); 
+            if (frames.contains(referenceUnit)) {
+                System.out.println("No fault!");
+                checkList.removeFirst();
+            } else if (step < frameNumber) {                
+                frames.addFirst(referenceUnit);
+                System.out.println("No fault!");
+                checkList.removeFirst();
+                step++;
+            } else {
+                while (refExists == false) { 
+                    char c = (char) frames.get(scanUnit);
+                    if (frames.contains(referenceUnit)) {
+                System.out.println("No fault!");
+                checkList.removeFirst();
+                    } else if (checkList.contains(c)) {
+                        scanUnit++;
+                    } else {
+                        int position = frames.indexOf(c);
+                        frames.remove(position);
+                        frames.add(position, referenceUnit);
+                        checkList.removeFirst();
+                        pageFault++;
+                        scanUnit = 0;
+                        refExists = true;
+                    }
+                }
+                refExists = false;
+            } 
+            System.out.println(Arrays.toString(frames.toArray()));
+            
+            referenceLength++;
+        }
+        System.out.println("Total page faults: " + pageFault);
         System.out.println("");
-        System.out.println("Select number of physical frames:");
     }
-    
+          
     private void simulateLRU() {
+        int referenceLength = 0;
+        char referenceUnit;
+        int checkLength = 0;
+        char checkUnit;
+        int scanUnit = 0;
+        int step = 0;
+        int pageFault = 0;
+        boolean refExists = false;
+        LinkedList checkList = new LinkedList();
+        LinkedList indexList = new LinkedList();
+        
         System.out.println("");
         System.out.println("Select number of physical frames:");
+        int frameNumber = Integer.parseInt(keyString.nextLine());
+        LinkedList frames = new LinkedList();
+        
+        while (checkLength < reference.length()){
+            checkUnit = reference.charAt(checkLength);
+            checkList.add(checkUnit);
+            checkLength++;
+        }
+        
+        while (referenceLength < reference.length()) {
+            referenceUnit = reference.charAt(referenceLength); 
+            if (frames.contains(referenceUnit)) {
+                System.out.println("No fault!");
+            } else if (step < frameNumber) {                
+                frames.addFirst(referenceUnit);
+                System.out.println("No fault!");
+                step++;
+            } else {
+                int i = 0;
+                int compWin = 0;
+                while (i < frameNumber - 1) {
+                    char c1 = (char) frames.get(compWin); 
+                    scanUnit = checkList.indexOf(c1);
+                    char c2 = (char) frames.get(i+1);
+                    int scanUnit2 = checkList.indexOf(c2);
+                    if (scanUnit <= scanUnit2) {
+                        compWin = scanUnit;
+                    } else {
+                        compWin = scanUnit2;
+                    }
+                    i++;
+                }
+                char removeThis = (char) checkList.get(compWin);
+                int removeInt = frames.indexOf(removeThis);
+                frames.remove(removeInt);
+                frames.add(referenceUnit);
+                pageFault++;
+            }
+            System.out.println(Arrays.toString(frames.toArray()));
+            referenceLength++;
+        }
+        System.out.println("Total page faults: " + pageFault);
+        System.out.println("");
     }
     
     private void simulateLFU() {
